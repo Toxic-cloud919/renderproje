@@ -1,11 +1,12 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
-import hashlib, hmac, json, re, secrets, sqlite3, time
+import hashlib, hmac, json, os, re, secrets, sqlite3, time
 
 ROOT = Path(__file__).resolve().parent
-DB_PATH = ROOT / "postakapi.db"
-HOST, PORT = "127.0.0.1", 8000
+DB_PATH = Path(os.environ.get("POSTAKAPI_DB_PATH", str(ROOT / "postakapi.db")))
+HOST = os.environ.get("HOST", "0.0.0.0" if "PORT" in os.environ else "127.0.0.1")
+PORT = int(os.environ.get("PORT", "8000"))
 ITERATIONS = 600_000
 SESSION_SECONDS = 14 * 24 * 60 * 60
 
@@ -18,6 +19,7 @@ def connect_db():
 
 
 def initialize_db():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with connect_db() as db:
         db.executescript("""
         CREATE TABLE IF NOT EXISTS users (
@@ -222,3 +224,4 @@ if __name__ == "__main__":
     print(f"PostaKapı sunucusu çalışıyor: http://{HOST}:{PORT}")
     print("Durdurmak için Ctrl+C. Bu adres şimdilik sadece bu bilgisayarda açık.")
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
+

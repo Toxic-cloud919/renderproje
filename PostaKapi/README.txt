@@ -1,21 +1,33 @@
-POSTAKAPI - ARKADASLIK VE SOHBET
+POSTAKAPI - RENDER ICIN DOSYA DUZENI
 
-Baslatma:
-1. Baslat menusunden PowerShell ac.
-2. Sunlari sirayla calistir:
-   cd "$env:USERPROFILE\Desktop\PostaKapi"
-   python server.py
-   (python bulunamazsa: py server.py)
-3. Tarayicida http://127.0.0.1:8000 adresini ac.
-4. Hesap olustur. Arkadasinin da hesap acmasi gerekir.
-5. Arkadasinin kayit oldugu e-posta adresini yazip istek gonder.
-6. Diger hesapta gelen istegi kabul edin; sonra listeden birbirinizi secip yazisin.
-7. Sunucuyu kapatmak icin PowerShell penceresinde Ctrl+C.
+Bu klasordeki Dockerfile, Render'daki mevcut Docker Web Service icin eklendi.
+GitHub deposunda dosyalar PostaKapi klasorundeyse Render ayarlari:
+- Settings > Build & Deploy > Root Directory: PostaKapi
+- Dockerfile Path: Dockerfile
+- Docker Context: .
 
-SQLite veritabani postakapi.db dosyasidir. Hesaplar, arkadaslik istekleri ve sohbetler
-burada saklanir. Sifreler duz metin olarak tutulmaz. Sohbetler uygulama icinde gonderilir;
-e-posta kutusuna mesaj gonderilmez. Yeni mesajlar yaklasik 2.5 saniyede bir kontrol edilir.
+Sunucuyu baslatma komutu Dockerfile tarafindan otomatik verilir.
+PORT degerini Render otomatik saglar.
 
-ONEMLI: 127.0.0.1 yalnizca bu bilgisayarda acilir. Farkli sehirlerdeki gercek kisilerle
-kullanmak icin uygulamayi HTTPS kullanan internete acik bir sunucuya tasimamiz gerekir.
-Bu ilk calisan surumde e-posta dogrulama, sifre sifirlama ve engelleme/raporlama yoktur.
+YERELDE CALISTIRMA:
+PowerShell'de:
+  cd "$env:USERPROFILE\Desktop\PostaKapi"
+  python server.py
+Sonra http://127.0.0.1:8000 adresini ac.
+
+postakapi.db kullanici verisi icerebilir; GitHub'a yukleme. .gitignore ve
+.dockerignore yeni yuklemelerde bu dosyayi disarida birakacak. GitHub'da daha
+once yuklenmis dosyayi ayrıca depodan silmek gerekir.
+
+VERITABANI NOTU:
+Render'in ucretsiz Docker servisindeki yerel SQLite dosyasi kalici degildir;
+sunucu yeniden baslayinca hesaplar ve mesajlar kaybolabilir. Kalici kullanim icin
+harici/kalici bir veritabani ayarlamadan gercek kullanicilarla baslatma.
+
+SQLITE DOSYA YOLU AYARI
+Sunucu POSTAKAPI_DB_PATH ortam degiskeni verilirse SQLite'i o konumda acar.
+Yerelde varsayilan dosya bu klasordeki postakapi.db'dir. Render'da kalici disk
+baglarsan POSTAKAPI_DB_PATH=/var/data/postakapi.db olarak ayarlanabilir.
+Ucretsiz Render hizmetinde kalici disk olmadigi icin SQLite verileri yeniden
+baslatma/uyku sonrasi kaybolabilir. Gercek kullanimdan once kalici disk veya
+kalici bir harici veritabani gerekir.
