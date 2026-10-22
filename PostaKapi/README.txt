@@ -33,19 +33,26 @@ baslatma/uyku sonrasi kaybolabilir. Gercek kullanimdan once kalici disk veya
 kalici bir harici veritabani gerekir.
 
 E-POSTA KODU AYARLARI (KAYIT VE SIFRE YENILEME)
-Kodlar HTTPS ile Resend e-posta API'si kullanilarak gonderilir. Render ucretsiz
-hizmetinde Gmail SMTP kullanilamaz; bu nedenle eski SMTP_HOST/SMTP_USER ayarlari
-gecerli degildir.
+Render ucretsiz hizmeti Gmail SMTP baglantilarini engelledigi icin Google Apps
+Script e-posta koprusu eklendi. Google hesabindan e-posta yollar; ucretsiz Gmail
+hesaplarinda gunde 100 alici siniri olabilir. Google limitleri degisebilir.
 
-1. Resend hesabinda bir API key olustur.
-2. Gercek kullanicilara e-posta gonderebilmek icin sahip oldugun bir alan adini
-   Resend'e ekleyip DNS kayitlariyla dogrula. Render adresi veya Gmail adresi
-   gonderici alan adi olarak kullanilamaz.
-3. Render Dashboard > servis > Environment bolumune su iki gizli degiskeni ekle:
-   RESEND_API_KEY = Resend API key'in (gizli tut)
-   EMAIL_FROM = PostaKapı <kod@dogruladigin-alan-adi>
-4. Save Changes ile yeniden deploy et.
+Ilk kurulum (bir kez):
+1. https://script.google.com adresini ac ve Google hesabinda oturum ac.
+2. Yeni proje olustur. Bu klasordeki GoogleMail.gs dosyasinin tum icerigini
+   projedeki Code.gs dosyasina kopyala.
+3. Ustteki calistirma secicisinden setupPostaKapi fonksiyonunu secip Run'a bas.
+   Google izin ekranini onayla. Execution log'da yazan MAIL_APPS_SCRIPT_TOKEN
+   degerini kopyala ve gizli tut.
+4. Deploy > New deployment > Web app sec. Execute as: Me; Who has access: Anyone
+   sec. Deploy'e bas ve /exec ile biten web app URL'sini kopyala. /dev adresini
+   kullanma.
+5. Render Dashboard > servis > Environment bolumune su iki degiskeni ekle:
+   MAIL_APPS_SCRIPT_URL = kopyaladigin /exec URL
+   MAIL_APPS_SCRIPT_TOKEN = execution log'dan kopyaladigin token
+6. Save Changes / redeploy yap. E-posta ayarlari olmadan kayit veya sifre kodu
+   gonderilemez. Kodlar 10 dakika gecerli; en fazla 5 yanlis deneme vardir.
 
-API key'i GitHub'a, bu repoya veya sohbet mesajina koyma. E-posta kodlari
-10 dakika gecerli, en fazla 5 yanlis deneme var ve yeniden kod istemek icin
-1 dakika beklenir.
+Gizli degeri GitHub'a veya sohbet mesajina koyma. Script endpoint'i disariya acik
+oldugu icin uzun ve rastgele bir token kullan; tokeni kaybedersen yenile ve hem
+Apps Script'te hem Render Environment'ta degistir.

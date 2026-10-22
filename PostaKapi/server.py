@@ -62,17 +62,38 @@ def email_code_hash(code, salt):
     return hashlib.sha256((salt + code).encode("utf-8")).hexdigest()
 
 def mail_ready():
-    return bool(os.environ.get("RESEND_API_KEY") and os.environ.get("EMAIL_FROM"))
+    apps_script_ready = bool(os.environ.get("MAIL_APPS_SCRIPT_URL") and os.environ.get("MAIL_APPS_SCRIPT_TOKEN"))
+    resend_ready = bool(os.environ.get("RESEND_API_KEY") and os.environ.get("EMAIL_FROM"))
+    return apps_script_ready or resend_ready
 
 def send_email_code(email, code, purpose):
     if not mail_ready():
         raise RuntimeError("Email API settings missing")
     purpose_text = "hesap oluşturma" if purpose == "register" else "şifre yenileme"
+    message = f"PostaKapı {purpose_text} kodun: {code}\n\nKod 10 dakika geçerlidir. Bu isteği sen yapmadıysan bu e-postayı yok say."
+    apps_script_url = os.environ.get("MAIL_APPS_SCRIPT_URL")
+    apps_script_token = os.environ.get("MAIL_APPS_SCRIPT_TOKEN")
+    if apps_script_url and apps_script_token:
+        payload = json.dumps({
+            "token": apps_script_token,
+            "to": email,
+            "subject": f"PostaKapı {purpose_text} kodun",
+            "text": message
+        }).encode("utf-8")
+        request = Request(apps_script_url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            with urlopen(request, timeout=30) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                if response.status != 200 or result.get("ok") is not True:
+                    raise RuntimeError("Apps Script email request failed")
+        except (HTTPError, URLError, ValueError) as exc:
+            raise RuntimeError("Apps Script email request failed") from None
+        return
     payload = json.dumps({
         "from": os.environ["EMAIL_FROM"],
         "to": [email],
         "subject": f"PostaKapı {purpose_text} kodun",
-        "text": f"PostaKapı {purpose_text} kodun: {code}\n\nKod 10 dakika geçerlidir. Bu isteği sen yapmadıysan bu e-postayı yok say."
+        "text": message
     }).encode("utf-8")
     request = Request("https://api.resend.com/emails", data=payload, headers={
         "Authorization": f"Bearer {os.environ['RESEND_API_KEY']}",
@@ -213,7 +234,7 @@ class Handler(BaseHTTPRequestHandler):
         if not name: return self.json_out(400,{"error":"Adını yaz."})
         if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",email): return self.json_out(400,{"error":"Geçerli bir e-posta yaz."})
         if not 8<=len(password)<=256: return self.json_out(400,{"error":"Şifre 8 ile 256 karakter arasında olmalı."})
-        if not mail_ready(): return self.json_out(503,{"error":"Kayıt kodu gönderilemedi: Render Environment bölümünde RESEND_API_KEY ve EMAIL_FROM ayarları eksik."})
+        if not mail_ready(): return self.json_out(503,{"error":"E-posta gönderimi ayarlanmamış. Render Environment bölümüne e-posta sağlayıcı ayarlarını ekle."})
         with connect_db() as db:
             if db.execute("SELECT 1 FROM users WHERE email=?",(email,)).fetchone(): return self.json_out(409,{"error":"Bu e-posta ile hesap zaten var. Giriş yap."})
         salt=secrets.token_bytes(16)
@@ -242,7 +263,7 @@ class Handler(BaseHTTPRequestHandler):
     def forgot_password(self,data):
         email=str(data.get("email","")).strip().lower()[:254]
         if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",email): return self.json_out(400,{"error":"Geçerli bir e-posta yaz."})
-        if not mail_ready(): return self.json_out(503,{"error":"Şifre yenileme kodu gönderilemedi: Render Environment bölümünde RESEND_API_KEY ve EMAIL_FROM ayarları eksik."})
+        if not mail_ready(): return self.json_out(503,{"error":"E-posta gönderimi ayarlanmamış. Render Environment bölümüne e-posta sağlayıcı ayarlarını ekle."})
         with connect_db() as db: exists=db.execute("SELECT 1 FROM users WHERE email=?",(email,)).fetchone()
         if exists:
             ok,msg=issue_email_code(email,"reset",{})
