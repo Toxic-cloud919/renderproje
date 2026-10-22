@@ -33,15 +33,19 @@ baslatma/uyku sonrasi kaybolabilir. Gercek kullanimdan once kalici disk veya
 kalici bir harici veritabani gerekir.
 
 E-POSTA KODU AYARLARI (KAYIT VE SIFRE YENILEME)
-Sunucu SMTP ile 6 haneli kod gonderir. Render Dashboard > Environment bolumunde
-su gizli ortam degiskenlerini ayarla:
-  SMTP_HOST
-  SMTP_PORT
-  SMTP_USER
-  SMTP_PASSWORD
-Istege bagli: SMTP_FROM
+Kodlar HTTPS ile Resend e-posta API'si kullanilarak gonderilir. Render ucretsiz
+hizmetinde Gmail SMTP kullanilamaz; bu nedenle eski SMTP_HOST/SMTP_USER ayarlari
+gecerli degildir.
 
-Gmail kullanirken normal Google hesap sifreni degil, Google App Password kullan.
-Bu gizli degeri GitHub'a veya sohbet mesajina koyma; Render'in gizli Environment
-alanina kendin gir. E-posta kodlari 10 dakika gecerli, en fazla 5 yanlis deneme
-var ve yeniden kod istemek icin 1 dakika beklenir.
+1. Resend hesabinda bir API key olustur.
+2. Gercek kullanicilara e-posta gonderebilmek icin sahip oldugun bir alan adini
+   Resend'e ekleyip DNS kayitlariyla dogrula. Render adresi veya Gmail adresi
+   gonderici alan adi olarak kullanilamaz.
+3. Render Dashboard > servis > Environment bolumune su iki gizli degiskeni ekle:
+   RESEND_API_KEY = Resend API key'in (gizli tut)
+   EMAIL_FROM = PostaKapı <kod@dogruladigin-alan-adi>
+4. Save Changes ile yeniden deploy et.
+
+API key'i GitHub'a, bu repoya veya sohbet mesajina koyma. E-posta kodlari
+10 dakika gecerli, en fazla 5 yanlis deneme var ve yeniden kod istemek icin
+1 dakika beklenir.
